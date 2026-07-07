@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: copilot_postgres_prod
+    env_file:
+      - .env.production
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - db-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-copilot} -d ${POSTGRES_DB:-copilot_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: copilot_redis_prod
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    networks:
+      - db-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: copilot_qdrant_prod
+    volumes:
+      - qdrantdata:/qdrant/storage
+    networks:
+      - db-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: copilot_backend_prod
+    env_file:
+      - .env.production
+    environment:
+      - QDRANT_HOST=qdrant
+      - ENV_FILE=../.env.production
+    volumes:
+      - ./backend/storage:/app/storage
+    networks:
+      - backend-network
+      - db-network
+      - ai-network
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: copilot_frontend_prod
+    ports:
+      - "80:80"
+    networks:
+      - frontend-network
+      - backend-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  frontend-network:
+    driver: bridge
+  backend-network:
+    driver: bridge
+  db-network:
+    driver: bridge
+  ai-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
+  qdrantdata:

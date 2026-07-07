@@ -1,0 +1,45 @@
+# IDE / Editor config
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Dependencies
+node_modules/
+backend/venv/
+backend/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build outputs
+dist/
+build/
+backend/storage/logs/*
+backend/storage/uploads/*
+
+# Environment files (CRITICAL: Do not commit keys!)
+.env
+.env.development
+.env.production
+.env.local
+.env.*.local
+
+# Databases and cache
+db.sqlite3
+*.db
+backend/storage/db/
+qdrant_storage/
+pgdata/
+redis_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Frontend local config
+frontend/.vite/
