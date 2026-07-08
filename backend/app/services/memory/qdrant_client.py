@@ -14,8 +14,14 @@ EMBEDDING_DIM = 384 # Example size for all-MiniLM-L6-v2
 import os
 
 # Configure client based on environment
-qdrant_host = os.getenv("QDRANT_HOST", "localhost")
-client = QdrantClient(host=qdrant_host, port=6333)
+qdrant_url = os.getenv("QDRANT_URL")
+qdrant_api_key = os.getenv("QDRANT_API_KEY")
+
+if qdrant_url and qdrant_api_key:
+    client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+else:
+    qdrant_host = os.getenv("QDRANT_HOST", "localhost")
+    client = QdrantClient(host=qdrant_host, port=6333)
 
 def init_qdrant():
     collections = client.get_collections().collections
