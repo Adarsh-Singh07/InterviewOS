@@ -36,7 +36,7 @@ def bootstrap_admin():
 async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Starting up AI Copilot backend...")
-    # Base.metadata.create_all(bind=engine) # Removed in favor of Alembic migrations
+    Base.metadata.create_all(bind=engine)
     bootstrap_admin()
     yield
     logger.info("Shutting down AI Copilot backend...")
