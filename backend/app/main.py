@@ -53,7 +53,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.exception(f"Unhandled exception during request {request.method} {request.url}")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "An internal server error occurred. Please check the logs."},
+        content={"detail": f"An internal server error occurred: {str(exc)}"},
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 
