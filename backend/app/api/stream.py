@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.user import User as UserModel
 from app.services.asr.deepgram_client import ASRClient
-from app.services.llm.orchestrator import generate_answer
 from app.services.memory.qdrant_client import search_knowledge_base
 from jose import jwt, JWTError
 from app.core.config import settings
