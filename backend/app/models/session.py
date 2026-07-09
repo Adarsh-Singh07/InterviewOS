@@ -18,6 +18,7 @@ class InterviewSession(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     company = Column(String, nullable=False)
     job_description = Column(Text, nullable=True)
+    custom_instructions = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships

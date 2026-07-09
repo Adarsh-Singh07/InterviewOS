@@ -49,6 +49,9 @@ from app.services.llm.orchestrator import AVAILABLE_MODELS
 async def get_models():
     return {"models": AVAILABLE_MODELS}
 
+from fastapi.responses import StreamingResponse
+import json
+
 @router.post("/generate")
 async def manual_generate_answer(
     question: str, 
@@ -69,6 +72,9 @@ async def manual_generate_answer(
         ).first()
         if session:
             attached_doc_ids = [d.id for d in session.attached_documents]
+            # Since we will add custom_instructions to InterviewSession, we can append it here
+            if hasattr(session, 'custom_instructions') and session.custom_instructions:
+                custom_instructions = session.custom_instructions + "\n" + custom_instructions
             
     # RAG search isolated by session_id and attached documents
     context_hits = search_knowledge_base(
@@ -79,23 +85,34 @@ async def manual_generate_answer(
     )
     context_text = "\n".join([hit["text"] for hit in context_hits])
     
-    # LLM generation
-    result = await generate_answer(question, context_text, custom_instructions, preferred_model_id=model_id)
-    
-    # Save the interaction to memory with session_id
-    if result and "answer" in result:
-        from app.services.memory.qdrant_client import ingest_document
-        import asyncio
-        interaction = f"Interview Question: {question}\nCopilot Answer: {result['answer']}"
-        await asyncio.to_thread(
-            ingest_document, 
-            user_id=user_id, 
-            text=interaction, 
-            source=f"session_{session_id}_interaction",
-            session_id=session_id
-        )
-    
-    return result
+    # LLM generation wrapper
+    async def stream_wrapper():
+        full_answer = ""
+        from app.services.llm.orchestrator import generate_answer_stream
+        async for chunk_data in generate_answer_stream(question, context_text, custom_instructions, preferred_model_id=model_id):
+            yield chunk_data
+            if chunk_data.startswith("data: ") and chunk_data != "data: [DONE]\n\n":
+                try:
+                    data = json.loads(chunk_data[6:])
+                    if "answer" in data:
+                        full_answer += data["answer"]
+                except:
+                    pass
+        
+        # Save the interaction to memory with session_id
+        if full_answer:
+            from app.services.memory.qdrant_client import ingest_document
+            import asyncio
+            interaction = f"Interview Question: {question}\nCopilot Answer: {full_answer}"
+            await asyncio.to_thread(
+                ingest_document, 
+                user_id=user_id, 
+                text=interaction, 
+                source=f"session_{session_id}_interaction",
+                session_id=session_id
+            )
+            
+    return StreamingResponse(stream_wrapper(), media_type="text/event-stream")
 
 @router.delete("/memory")
 async def clear_memory(

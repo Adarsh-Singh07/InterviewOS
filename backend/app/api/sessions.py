@@ -14,6 +14,7 @@ router = APIRouter()
 class SessionCreate(BaseModel):
     company: str
     job_description: Optional[str] = ""
+    custom_instructions: Optional[str] = ""
     attached_doc_ids: Optional[List[int]] = []
 
 @router.get("")
@@ -28,6 +29,7 @@ async def get_sessions(
             "id": s.id,
             "company": s.company,
             "job_description": s.job_description,
+            "custom_instructions": s.custom_instructions,
             "created_at": s.created_at,
             "attached_documents": [{"id": d.id, "filename": d.filename, "file_type": d.file_type} for d in s.attached_documents]
         })
@@ -46,6 +48,7 @@ async def get_session(
         "id": session.id,
         "company": session.company,
         "job_description": session.job_description,
+        "custom_instructions": session.custom_instructions,
         "created_at": session.created_at,
         "attached_documents": [{"id": d.id, "filename": d.filename, "file_type": d.file_type} for d in session.attached_documents]
     }
@@ -62,6 +65,7 @@ async def create_session(
         user_id=current_user.id,
         company=data.company,
         job_description=data.job_description,
+        custom_instructions=data.custom_instructions,
         attached_documents=docs
     )
     db.add(new_session)
@@ -72,6 +76,7 @@ async def create_session(
         "id": new_session.id,
         "company": new_session.company,
         "job_description": new_session.job_description,
+        "custom_instructions": new_session.custom_instructions,
         "created_at": new_session.created_at,
         "attached_documents": [{"id": d.id, "filename": d.filename} for d in new_session.attached_documents]
     }

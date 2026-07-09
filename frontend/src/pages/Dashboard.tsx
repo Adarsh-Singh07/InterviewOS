@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sessionCompany, setSessionCompany] = useState('');
   const [sessionJD, setSessionJD] = useState('');
+  const [customInstructions, setCustomInstructions] = useState('');
   const [attachedDocs, setAttachedDocs] = useState<number[]>([]);
 
   // Data States
@@ -143,6 +144,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           company: sessionCompany,
           job_description: sessionJD,
+          custom_instructions: customInstructions,
           attached_doc_ids: attachedDocs
         })
       });
@@ -153,6 +155,7 @@ export default function Dashboard() {
         // Clear modal state
         setSessionCompany('');
         setSessionJD('');
+        setCustomInstructions('');
         setAttachedDocs([]);
         // Route to the Copilot workspace with this session ID
         navigate(`/session/${newSession.id}`);
@@ -537,8 +540,19 @@ export default function Dashboard() {
                 <textarea 
                   value={sessionJD}
                   onChange={e => setSessionJD(e.target.value)}
-                  placeholder="Paste requirements, description, or custom instruction context..."
-                  rows={4}
+                  placeholder="Paste the job description or requirements here..."
+                  rows={3}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#0f172a] text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder-gray-400"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Custom Instructions</label>
+                <textarea 
+                  value={customInstructions}
+                  onChange={e => setCustomInstructions(e.target.value)}
+                  placeholder="e.g. 'Answer concisely, act as a senior developer, focus on cloud security...'"
+                  rows={2}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-white/10 bg-white dark:bg-[#0f172a] text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all placeholder-gray-400"
                 />
               </div>

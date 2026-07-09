@@ -84,12 +84,21 @@ export default function Copilot() {
     };
   }, [segments, currentInterim, autoAnswer, isGenerating]);
 
-  // Auto-scroll to bottom of transcript
+  const answerScrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll transcript
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [segments, currentInterim]);
+
+  // Auto-scroll answer
+  useEffect(() => {
+    if (answerScrollRef.current) {
+      answerScrollRef.current.scrollTop = answerScrollRef.current.scrollHeight;
+    }
+  }, [answer]);
 
   // Sync theme to localStorage
   useEffect(() => {
@@ -171,20 +180,48 @@ export default function Copilot() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
-      setAnswer(data.answer);
       
+      if (!res.body) throw new Error("No response body");
+      
+      // Stop the generating skeleton as soon as stream starts
+      setIsGenerating(false);
+      
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      
+      let done = false;
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        if (value) {
+          const chunkValue = decoder.decode(value, { stream: true });
+          const lines = chunkValue.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const dataStr = line.replace('data: ', '').trim();
+              if (dataStr === '[DONE]') {
+                done = true;
+                break;
+              }
+              try {
+                 const parsed = JSON.parse(dataStr);
+                 if (parsed.answer) {
+                   setAnswer(prev => prev + parsed.answer);
+                 }
+                 if (parsed.model && parsed.model !== selectedModel && parsed.model !== "none") {
+                   setFallbackWarning(`Model exhausted. Auto-fell back to ${parsed.model}`);
+                   setSelectedModel(parsed.model);
+                 }
+              } catch(e) {}
+            }
+          }
+        }
+      }
       setSegments([]);
       setCurrentInterim('');
-      
-      if (data.model && data.model !== selectedModel && data.model !== "none") {
-        setFallbackWarning(`Model exhausted. Auto-fell back to ${data.model}`);
-        setSelectedModel(data.model);
-      }
     } catch (err) {
       console.error(err);
-      setAnswer("Error generating response.");
-    } finally {
+      setAnswer(prev => prev || "Error generating response.");
       setIsGenerating(false);
     }
   };
@@ -403,7 +440,7 @@ export default function Copilot() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 md:p-10">
+            <div ref={answerScrollRef} className="flex-1 overflow-y-auto p-6 md:p-10">
               {isGenerating ? (
                 <div className="space-y-4 animate-pulse max-w-2xl">
                   <div className="h-4 bg-gray-200 dark:bg-indigo-500/20 rounded w-3/4"></div>
