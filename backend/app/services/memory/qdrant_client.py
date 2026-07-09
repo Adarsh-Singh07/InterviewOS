@@ -30,6 +30,16 @@ def init_qdrant():
             collection_name=COLLECTION_NAME,
             vectors_config=models.VectorParams(size=EMBEDDING_DIM, distance=models.Distance.COSINE),
         )
+        # Qdrant Cloud requires payload indices for filtered queries
+        for field in ["user_id", "session_id", "document_id"]:
+            try:
+                client.create_payload_index(
+                    collection_name=COLLECTION_NAME,
+                    field_name=field,
+                    field_schema=models.PayloadSchemaType.INTEGER,
+                )
+            except Exception as e:
+                print(f"Warning: Failed to create index for {field}: {e}")
 
 def get_embedding(text: str) -> list[float]:
     # TODO: Replace with actual local embedding model like FastEmbed or HuggingFace
