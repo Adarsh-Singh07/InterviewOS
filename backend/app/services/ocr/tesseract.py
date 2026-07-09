@@ -20,12 +20,6 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
             extracted = page.extract_text()
             if extracted:
                 text += extracted + "\n"
-            else:
-                # Fallback to OCR if page has no text layer
-                im = page.to_image()
-                # Get the PIL image and run OCR
-                pil_im = im.original
-                text += pytesseract.image_to_string(pil_im) + "\n"
     return text
 
 def process_document(filename: str, file_bytes: bytes, mime_type: str) -> str:
