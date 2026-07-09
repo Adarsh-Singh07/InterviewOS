@@ -36,7 +36,7 @@ def bootstrap_admin():
 async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Starting up AI Copilot backend...")
-    Base.metadata.create_all(bind=engine)
+    # Base.metadata.create_all(bind=engine) # Removed to prevent PgBouncer transaction-mode hangs
     bootstrap_admin()
     yield
     logger.info("Shutting down AI Copilot backend...")
