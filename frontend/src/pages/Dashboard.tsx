@@ -7,6 +7,7 @@ interface DocumentConfig {
   id: number;
   filename: string;
   file_type: string;
+  parsed_data?: any;
   created_at: string;
 }
 
@@ -14,6 +15,7 @@ interface SessionConfig {
   id: number;
   company: string;
   job_description: string;
+  summary?: string;
   created_at: string;
   attached_documents: { id: number; filename: string; file_type: string }[];
 }
@@ -32,6 +34,28 @@ export default function Dashboard() {
   const [sessionJD, setSessionJD] = useState('');
   const [customInstructions, setCustomInstructions] = useState('');
   const [attachedDocs, setAttachedDocs] = useState<number[]>([]);
+
+  // Resume Edit State
+  const [selectedResume, setSelectedResume] = useState<any | null>(null);
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+  const [editResumeForm, setEditResumeForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    skills: '',
+    experience: '',
+    projects: '',
+    education: '',
+    summary: ''
+  });
+
+  // Transcript & Summary State
+  const [selectedSession, setSelectedSession] = useState<any | null>(null);
+  const [isTranscriptModalOpen, setIsTranscriptModalOpen] = useState(false);
+  const [sessionTranscript, setSessionTranscript] = useState<any[]>([]);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryModel, setSummaryModel] = useState('gpt-5.4-mini');
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
 
   // Data States
   const [documents, setDocuments] = useState<DocumentConfig[]>([]);
@@ -55,6 +79,14 @@ export default function Dashboard() {
       const sessRes = await fetch(`${API_BASE_URL}/api/v1/sessions`, { headers });
       const sessData = await sessRes.json();
       if (Array.isArray(sessData)) setSessions(sessData);
+
+      // Fetch models for summary dropdown
+      const modelRes = await fetch(`${API_BASE_URL}/api/v1/stream/models`, { headers });
+      const modelData = await modelRes.json();
+      if (modelData.models && modelData.models.length > 0) {
+        setAvailableModels(modelData.models);
+        setSummaryModel(modelData.models[0].id);
+      }
     } catch (e) {
       console.error('Failed to fetch dashboard data:', e);
     }
@@ -173,6 +205,88 @@ export default function Dashboard() {
     setAttachedDocs(prev => 
       prev.includes(docId) ? prev.filter(id => id !== docId) : [...prev, docId]
     );
+  };
+
+  const handleOpenResumeEditor = (doc: any) => {
+    setSelectedResume(doc);
+    const pd = doc.parsed_data || {};
+    setEditResumeForm({
+      name: pd.name || '',
+      email: pd.email || '',
+      phone: pd.phone || '',
+      skills: pd.skills || '',
+      experience: pd.experience || '',
+      projects: pd.projects || '',
+      education: pd.education || '',
+      summary: pd.summary || ''
+    });
+    setIsResumeModalOpen(true);
+  };
+
+  const handleSaveResumeDetails = async () => {
+    if (!selectedResume) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/documents/${selectedResume.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ parsed_data: editResumeForm })
+      });
+      if (res.ok) {
+        alert('Resume details updated successfully!');
+        setIsResumeModalOpen(false);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(`Failed to save details: ${err.detail || 'Unknown error'}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error saving details.');
+    }
+  };
+
+  const handleOpenTranscript = async (session: any) => {
+    setSelectedSession(session);
+    setIsTranscriptModalOpen(true);
+    setSessionTranscript([]);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/${session.id}/transcript`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSessionTranscript(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!selectedSession) return;
+    setIsGeneratingSummary(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/sessions/${selectedSession.id}/summary?model_id=${summaryModel}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const updatedSummary = data.summary;
+        setSelectedSession((prev: any) => prev ? { ...prev, summary: updatedSummary } : null);
+        setSessions((prev: SessionConfig[]) => prev.map(s => s.id === selectedSession.id ? { ...s, summary: updatedSummary } : s));
+      } else {
+        alert(data.detail || 'Failed to generate summary.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error generating summary.');
+    } finally {
+      setIsGeneratingSummary(false);
+    }
   };
 
   const resumes = documents.filter(d => d.file_type === 'resume');
@@ -397,6 +511,12 @@ export default function Dashboard() {
                           </td>
                           <td className="px-6 py-4 text-right space-x-3.5">
                             <button 
+                              onClick={() => handleOpenTranscript(s)}
+                              className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:opacity-85"
+                            >
+                              View Transcript
+                            </button>
+                            <button 
                               onClick={() => navigate(`/session/${s.id}`)}
                               className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:opacity-85"
                             >
@@ -453,7 +573,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-4">
-                        <span className="text-[9px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10 uppercase">Resume</span>
+                        <button onClick={() => handleOpenResumeEditor(r)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:opacity-85">Edit Details</button>
                         <button onClick={() => handleDeleteDocument(r.id)} className="text-xs font-bold text-red-500 hover:opacity-85">Delete</button>
                       </div>
                     </div>
@@ -608,6 +728,217 @@ export default function Dashboard() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* RESUME DETAILS EDITOR MODAL */}
+      {isResumeModalOpen && selectedResume && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#0A0D1A] border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6.5 space-y-6 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-serif text-slate-900 dark:text-white">Edit Candidate CV Details</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">CV: {selectedResume.filename}</p>
+              </div>
+              <button 
+                onClick={() => setIsResumeModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-1">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Full Name</label>
+                <input 
+                  type="text" 
+                  value={editResumeForm.name} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Email</label>
+                <input 
+                  type="email" 
+                  value={editResumeForm.email} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Phone</label>
+                <input 
+                  type="text" 
+                  value={editResumeForm.phone} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Skills (Comma-separated)</label>
+                <input 
+                  type="text" 
+                  value={editResumeForm.skills} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, skills: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Professional Summary</label>
+                <textarea 
+                  value={editResumeForm.summary} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, summary: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Work Experience</label>
+                <textarea 
+                  value={editResumeForm.experience} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, experience: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Key Projects</label>
+                <textarea 
+                  value={editResumeForm.projects} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, projects: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Education Details</label>
+                <textarea 
+                  value={editResumeForm.education} 
+                  onChange={e => setEditResumeForm(prev => ({ ...prev, education: e.target.value }))}
+                  rows={2}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#0B0F19]/40 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button 
+                onClick={() => setIsResumeModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveResumeDetails}
+                className="px-6 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-all hover:scale-[1.02]"
+              >
+                Save Extracted Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SESSION TRANSCRIPT & SUMMARY MODAL */}
+      {isTranscriptModalOpen && selectedSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-3xl bg-white dark:bg-[#0A0D1A] border border-slate-200 dark:border-white/10 rounded-3xl overflow-hidden shadow-2xl p-6.5 space-y-6 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-serif text-slate-900 dark:text-white">Session logs: {selectedSession.company}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono">{new Date(selectedSession.created_at).toLocaleString()}</p>
+              </div>
+              <button 
+                onClick={() => setIsTranscriptModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 max-h-[420px] overflow-y-auto pr-1">
+              
+              {/* Left Column: Transcript Logs */}
+              <div className="md:col-span-3 space-y-4 border-r border-slate-200/60 dark:border-white/5 pr-4 max-h-[400px] overflow-y-auto">
+                <h4 className="text-[10px] font-bold font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest font-semibold">Question & Copilot Answer logs</h4>
+                
+                {sessionTranscript.length === 0 ? (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 italic py-8 text-center">No messages recorded in this session yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {sessionTranscript.map((msg, idx) => (
+                      <div key={idx} className={`p-3 rounded-2xl text-xs space-y-1 border ${
+                        msg.role === 'interviewer'
+                          ? 'bg-slate-100/50 dark:bg-white/5 border-slate-200/50 dark:border-white/5 text-slate-800 dark:text-slate-200'
+                          : 'bg-indigo-500/5 border-indigo-500/10 text-slate-800 dark:text-indigo-200'
+                      }`}>
+                        <span className="text-[9px] font-mono font-bold uppercase tracking-wider block opacity-70">
+                          {msg.role === 'interviewer' ? 'Interviewer Query' : 'Copilot Suggestion'}
+                        </span>
+                        <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Performance Summary */}
+              <div className="md:col-span-2 space-y-4 max-h-[400px] overflow-y-auto flex flex-col justify-between">
+                <div className="space-y-3 flex-1">
+                  <h4 className="text-[10px] font-bold font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest font-semibold">Session Summary</h4>
+                  {selectedSession.summary ? (
+                    <div className="p-3.5 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap max-h-[220px] overflow-y-auto">
+                      {selectedSession.summary}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 dark:text-slate-500 italic">No summary generated yet. Select a model below to compile a summary.</p>
+                  )}
+                </div>
+
+                <div className="space-y-2.5 pt-3 border-t border-slate-200/60 dark:border-white/5">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-bold font-mono text-slate-400 uppercase tracking-wider block">Summary Engine</label>
+                    <select
+                      value={summaryModel}
+                      onChange={e => setSummaryModel(e.target.value)}
+                      className="w-full text-xs bg-slate-50 dark:bg-[#0B0F19]/40 border border-slate-200 dark:border-white/10 rounded-xl p-2 text-slate-900 dark:text-indigo-300 font-semibold focus:outline-none"
+                    >
+                      {availableModels.map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <button
+                    onClick={handleGenerateSummary}
+                    disabled={isGeneratingSummary || sessionTranscript.length === 0}
+                    className="w-full px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-slate-950 dark:bg-white dark:text-slate-950 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
+                  >
+                    {isGeneratingSummary ? (
+                      <>
+                        <svg className="animate-spin h-3 w-3 text-current" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                        <span>Summarizing...</span>
+                      </>
+                    ) : (
+                      <span>Compile Session Summary</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2 border-t border-slate-200/60 dark:border-white/5">
+              <button 
+                onClick={() => setIsTranscriptModalOpen(false)}
+                className="px-5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

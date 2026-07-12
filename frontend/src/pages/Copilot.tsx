@@ -35,9 +35,11 @@ export default function Copilot() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [fallbackWarning, setFallbackWarning] = useState<string>('');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const answerScrollRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<any>(null);
 
   // Close dropdown when clicking outside
@@ -54,7 +56,9 @@ export default function Copilot() {
 
   // Fetch Models on mount
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/v1/stream/models`)
+    fetch(`${API_BASE_URL}/api/v1/stream/models`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.models && data.models.length > 0) {
@@ -63,7 +67,7 @@ export default function Copilot() {
         }
       })
       .catch(console.error);
-  }, []);
+  }, [token]);
 
   // Silence-based Auto Answer
   useEffect(() => {
@@ -84,8 +88,6 @@ export default function Copilot() {
     };
   }, [segments, currentInterim, autoAnswer, isGenerating]);
 
-  const answerScrollRef = useRef<HTMLDivElement>(null);
-
   // Auto-scroll transcript
   useEffect(() => {
     if (scrollRef.current) {
@@ -95,10 +97,16 @@ export default function Copilot() {
 
   // Auto-scroll answer
   useEffect(() => {
-    if (answerScrollRef.current) {
+    if (answerScrollRef.current && isAutoScrollEnabled) {
       answerScrollRef.current.scrollTop = answerScrollRef.current.scrollHeight;
     }
-  }, [answer]);
+  }, [answer, isAutoScrollEnabled]);
+
+  const handleAnswerScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isAtBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 80;
+    setIsAutoScrollEnabled(isAtBottom);
+  };
 
   // Sync theme to localStorage
   useEffect(() => {
@@ -173,6 +181,7 @@ export default function Copilot() {
     setIsGenerating(true);
     setAnswer(''); 
     setFallbackWarning('');
+    setIsAutoScrollEnabled(true);
 
     try {
       const url = `${API_BASE_URL}/api/v1/stream/generate?question=${encodeURIComponent(context)}&model_id=${selectedModel}` + (sessionId ? `&session_id=${sessionId}` : '');
@@ -445,7 +454,7 @@ export default function Copilot() {
               </div>
             </div>
  
-            <div ref={answerScrollRef} className="flex-1 overflow-y-auto p-8 lg:p-12">
+            <div ref={answerScrollRef} onScroll={handleAnswerScroll} className="flex-1 overflow-y-auto p-8 lg:p-12">
               {isGenerating ? (
                 <div className="space-y-5 animate-pulse max-w-2xl">
                   <div className="h-4 bg-slate-200 dark:bg-indigo-500/5 rounded w-3/4"></div>

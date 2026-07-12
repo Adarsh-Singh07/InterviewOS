@@ -19,7 +19,17 @@ class InterviewSession(Base):
     company = Column(String, nullable=False)
     job_description = Column(Text, nullable=True)
     custom_instructions = Column(Text, nullable=True)
+    summary = Column(Text, nullable=True) # AI generated summary of the session
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     attached_documents = relationship("Document", secondary=session_documents)
+
+class SessionMessage(Base):
+    __tablename__ = "session_messages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String, nullable=False) # "interviewer" or "copilot"
+    text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

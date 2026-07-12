@@ -23,3 +23,6 @@ class User(Base):
         "ocr_pages_monthly": 0,
         "ocr_pages_used": 0,
     })
+    
+    # Models the user has access to
+    allowed_models = Column(JSON, nullable=True)

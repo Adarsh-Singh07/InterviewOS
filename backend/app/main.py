@@ -32,11 +32,72 @@ def bootstrap_admin():
     finally:
         db.close()
 
+def init_additional_db_structures():
+    db = SessionLocal()
+    try:
+        # Check and alter documents
+        try:
+            db.execute("SELECT parsed_data FROM documents LIMIT 1")
+        except Exception:
+            db.rollback()
+            is_postgres = "postgresql" in settings.DATABASE_URL
+            col_type = "JSONB" if is_postgres else "JSON"
+            db.execute(f"ALTER TABLE documents ADD COLUMN parsed_data {col_type} NULL")
+            db.commit()
+            logger.info("Added parsed_data column to documents table")
+
+        # Check and alter interview_sessions
+        try:
+            db.execute("SELECT summary FROM interview_sessions LIMIT 1")
+        except Exception:
+            db.rollback()
+            db.execute("ALTER TABLE interview_sessions ADD COLUMN summary TEXT NULL")
+            db.commit()
+            logger.info("Added summary column to interview_sessions table")
+
+        # Check and alter users
+        try:
+            db.execute("SELECT allowed_models FROM users LIMIT 1")
+        except Exception:
+            db.rollback()
+            is_postgres = "postgresql" in settings.DATABASE_URL
+            col_type = "JSONB" if is_postgres else "JSON"
+            db.execute(f"ALTER TABLE users ADD COLUMN allowed_models {col_type} NULL")
+            db.commit()
+            logger.info("Added allowed_models column to users table")
+
+        # Create session_messages table if not exists
+        try:
+            db.execute("SELECT id FROM session_messages LIMIT 1")
+        except Exception:
+            db.rollback()
+            is_postgres = "postgresql" in settings.DATABASE_URL
+            id_type = "SERIAL PRIMARY KEY" if is_postgres else "INTEGER PRIMARY KEY AUTOINCREMENT"
+            time_type = "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP" if is_postgres else "DATETIME DEFAULT CURRENT_TIMESTAMP"
+            create_query = f"""
+            CREATE TABLE session_messages (
+                id {id_type},
+                session_id INTEGER NOT NULL REFERENCES interview_sessions(id) ON DELETE CASCADE,
+                role VARCHAR(50) NOT NULL,
+                text TEXT NOT NULL,
+                created_at {time_type}
+            );
+            """
+            db.execute(create_query)
+            db.commit()
+            logger.info("Created session_messages table")
+    except Exception as e:
+        logger.error(f"Error initializing additional DB structures: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("Starting up AI Copilot backend...")
     # Base.metadata.create_all(bind=engine) # Removed to prevent PgBouncer transaction-mode hangs
+    init_additional_db_structures()
     bootstrap_admin()
     yield
     logger.info("Shutting down AI Copilot backend...")

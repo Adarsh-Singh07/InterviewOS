@@ -161,6 +161,12 @@ async def generate_answer_stream(question: str, context: str, custom_instruction
         f"Custom Instructions:\n{custom_instructions}"
     )
     
+    is_lite = preferred_model_id and ("lite" in preferred_model_id or "mini" in preferred_model_id)
+    if is_lite:
+        system_prompt += (
+            "\n\nIMPORTANT NOTE: Since this is a detailed technical interview, your response MUST be comprehensive, structured, and detailed enough to take at least 1 minute of natural speech to read aloud (approximately 120-150 words). Provide detailed explanations of the architecture, choices made, and actual project implementation stories rather than a brief summary."
+        )
+    
     models_to_try = []
     if preferred_model_id:
         preferred_model = next((m for m in AVAILABLE_MODELS if m["id"] == preferred_model_id), None)
@@ -205,3 +211,76 @@ async def generate_answer_stream(question: str, context: str, custom_instruction
             
     yield f"data: {json.dumps({'answer': 'I am sorry, all AI models are unavailable.'})}\n\n"
     yield "data: [DONE]\n\n"
+
+async def parse_resume_text(text: str) -> dict:
+    prompt = (
+        "Extract the candidate's professional resume details from the following raw text into a structured JSON object. "
+        "The JSON MUST follow this exact schema structure:\n"
+        "{\n"
+        "  \"name\": \"Full Name (string)\",\n"
+        "  \"email\": \"Email address (string)\",\n"
+        "  \"phone\": \"Phone number (string)\",\n"
+        "  \"skills\": \"Comma-separated list of skills (string)\",\n"
+        "  \"experience\": \"Summary of work experience or list of roles (string)\",\n"
+        "  \"projects\": \"Key projects and details (string)\",\n"
+        "  \"education\": \"Degrees, schools, MCA, etc. (string)\",\n"
+        "  \"summary\": \"Brief professional introduction/summary (string)\"\n"
+        "}\n\n"
+        f"Raw resume text:\n{text}\n\n"
+        "Return ONLY the raw JSON block without markdown formatting or backticks."
+    )
+    
+    # Try Gemini 2.5 Flash
+    if gemini_client_1 or gemini_client_2:
+        client = gemini_client_1 or gemini_client_2
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            import re
+            cleaned = response.text.strip()
+            cleaned = re.sub(r"^```json\s*", "", cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(r"```$", "", cleaned)
+            return json.loads(cleaned.strip())
+        except Exception as e:
+            print(f"Gemini resume parsing failed: {e}")
+            
+    # Fallback to OpenAI if configured
+    if settings.OPENAI_API_KEY:
+        try:
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {settings.OPENAI_API_KEY}"
+            }
+            payload = {
+                "model": "gpt-5.4-mini",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.2
+            }
+            async with httpx.AsyncClient() as client:
+                r = await client.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=30.0)
+                if r.status_code == 200:
+                    res_json = r.json()
+                    content = res_json["choices"][0]["message"]["content"]
+                    import re
+                    cleaned = content.strip()
+                    cleaned = re.sub(r"^```json\s*", "", cleaned, flags=re.IGNORECASE)
+                    cleaned = re.sub(r"```$", "", cleaned)
+                    return json.loads(cleaned.strip())
+        except Exception as e:
+            print(f"OpenAI resume parsing failed: {e}")
+
+    # Default fallback structure
+    return {
+        "name": "",
+        "email": "",
+        "phone": "",
+        "skills": "",
+        "experience": "",
+        "projects": "",
+        "education": "",
+        "summary": text[:200] if text else ""
+    }

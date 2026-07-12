@@ -36,8 +36,39 @@ async def websocket_audio(websocket: WebSocket, token: str = Query(...)):
         await websocket.close()
         return
 
-    # Start ASR processing
-    await asr_client.process_stream(websocket)
+    # Check monthly transcription limit
+    if user.role != "admin" and user.quotas:
+        monthly_limit = user.quotas.get("transcription_minutes_monthly", 0)
+        used_minutes = user.quotas.get("transcription_minutes_used", 0)
+        if monthly_limit > 0 and used_minutes >= monthly_limit:
+            await websocket.send_text('{"error": "Transcription limit exceeded. Please contact admin."}')
+            await websocket.close()
+            return
+
+    import time
+    start_time = time.time()
+    try:
+        # Start ASR processing
+        await asr_client.process_stream(websocket)
+    finally:
+        # Calculate session length and update quotas
+        duration_sec = time.time() - start_time
+        duration_min = duration_sec / 60.0
+        
+        db = SessionLocal()
+        try:
+            db_user = db.query(UserModel).filter(UserModel.id == user.id).first()
+            if db_user:
+                current_quotas = dict(db_user.quotas or {})
+                current_quotas["transcription_minutes_used"] = current_quotas.get("transcription_minutes_used", 0) + duration_min
+                db_user.quotas = current_quotas
+                from sqlalchemy.orm.attributes import flag_modified
+                flag_modified(db_user, "quotas")
+                db.commit()
+        except Exception as e:
+            print(f"Error updating user transcription usage: {e}")
+        finally:
+            db.close()
 
 from app.api.auth import get_current_active_user
 from app.core.database import get_db
@@ -45,7 +76,11 @@ from app.models.session import InterviewSession
 from app.services.llm.orchestrator import AVAILABLE_MODELS
 
 @router.get("/models")
-async def get_models():
+async def get_models(current_user: UserModel = Depends(get_current_active_user)):
+    user_models = current_user.allowed_models
+    if user_models is not None:
+        filtered = [m for m in AVAILABLE_MODELS if m["id"] in user_models]
+        return {"models": filtered}
     return {"models": AVAILABLE_MODELS}
 
 from fastapi.responses import StreamingResponse
@@ -62,6 +97,12 @@ async def manual_generate_answer(
 ):
     user_id = current_user.id
     
+    # Check model permissions
+    if model_id:
+        user_models = current_user.allowed_models
+        if user_models is not None and model_id not in user_models:
+            raise HTTPException(status_code=403, detail="You do not have permission to use this model.")
+            
     # Check attached documents from the session
     attached_doc_ids = []
     if session_id:
@@ -71,7 +112,6 @@ async def manual_generate_answer(
         ).first()
         if session:
             attached_doc_ids = [d.id for d in session.attached_documents]
-            # Since we will add custom_instructions to InterviewSession, we can append it here
             if hasattr(session, 'custom_instructions') and session.custom_instructions:
                 custom_instructions = session.custom_instructions + "\n" + custom_instructions
             
@@ -110,6 +150,20 @@ async def manual_generate_answer(
                 source=f"session_{session_id}_interaction",
                 session_id=session_id
             )
+            
+            # Save interaction to DB transcripts table
+            if session_id:
+                try:
+                    from app.models.session import SessionMessage
+                    db_local = SessionLocal()
+                    msg_q = SessionMessage(session_id=session_id, role="interviewer", text=question)
+                    msg_a = SessionMessage(session_id=session_id, role="copilot", text=full_answer)
+                    db_local.add(msg_q)
+                    db_local.add(msg_a)
+                    db_local.commit()
+                    db_local.close()
+                except Exception as db_err:
+                    print(f"Error saving SessionMessage: {db_err}")
             
     return StreamingResponse(stream_wrapper(), media_type="text/event-stream")
 

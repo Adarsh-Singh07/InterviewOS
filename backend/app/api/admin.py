@@ -28,10 +28,13 @@ def update_user(user_id: int, user_in: UserUpdate, db: Session = Depends(get_db)
         current_quotas = user.quotas or {}
         current_quotas.update(user_in.quotas)
         user.quotas = current_quotas
-        # Re-assign to force SQLAlchemy to notice the JSON change if needed
-        # (Alternatively use flag_modified from sqlalchemy.orm.attributes)
         from sqlalchemy.orm.attributes import flag_modified
         flag_modified(user, "quotas")
+        
+    if user_in.allowed_models is not None:
+        user.allowed_models = user_in.allowed_models
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(user, "allowed_models")
         
     db.commit()
     db.refresh(user)
