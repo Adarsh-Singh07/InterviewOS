@@ -58,52 +58,67 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl bg-gray-800 p-8 shadow-xl ring-1 ring-gray-700/50 backdrop-blur-sm">
-        <h2 className="mb-6 text-3xl font-bold tracking-tight text-white text-center">
-          {isLogin ? 'Welcome Back' : 'Create Account'}
-        </h2>
+    <div className="min-h-screen bg-[#060814] text-slate-100 font-sans relative overflow-hidden flex items-center justify-center p-4">
+      {/* Background Noise and Ambience */}
+      <div className="noise-overlay" />
+      <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-indigo-500/5 to-purple-500/0 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-emerald-500/5 to-indigo-500/0 blur-[80px] pointer-events-none" />
+
+      <div className="w-full max-w-md rounded-3xl bg-white/5 border border-white/5 shadow-2xl p-8 backdrop-blur-md relative z-10 space-y-6">
+        
+        {/* Header/Logo */}
+        <div className="flex flex-col items-center space-y-2">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <h2 className="text-3xl font-serif text-white text-center">
+            {isLogin ? 'Welcome back' : 'Create Account'}
+          </h2>
+          <p className="text-xs text-slate-400 font-mono tracking-wider uppercase">{isLogin ? 'Sign in to InterviewOS' : 'Join the copilot network'}</p>
+        </div>
         
         {error && (
-          <div className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
+          <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 text-xs text-red-400 text-center font-medium">
             {error}
           </div>
         )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-300">Email</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Email Address</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg bg-gray-900 border border-gray-700 p-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+              placeholder="name@domain.com"
+              className="w-full rounded-xl bg-[#0B0F19]/40 border border-white/10 p-3 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-500"
               required
             />
           </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-300">Password</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold font-mono text-slate-400 uppercase tracking-widest block">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg bg-gray-900 border border-gray-700 p-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+              placeholder="••••••••"
+              className="w-full rounded-xl bg-[#0B0F19]/40 border border-white/10 p-3 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder-slate-500"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-indigo-600 p-3 font-semibold text-white shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 transition-all active:scale-[0.98]"
+            className="w-full rounded-xl bg-white text-slate-950 p-3 font-semibold text-sm hover:opacity-90 shadow-md transition-all hover:scale-[1.01] active:scale-[0.99] mt-2 cursor-pointer"
           >
-            {isLogin ? 'Sign In' : 'Register'}
+            {isLogin ? 'Sign In' : 'Register Account'}
           </button>
         </form>
         
-        <p className="mt-6 text-center text-sm text-gray-400">
+        <p className="text-center text-xs text-slate-400 pt-2 border-t border-white/5">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+            className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
           >
             {isLogin ? 'Register' : 'Sign In'}
           </button>

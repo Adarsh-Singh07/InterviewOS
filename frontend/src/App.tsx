@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Copilot from './pages/Copilot';
 import Admin from './pages/Admin';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactNode, requiredRole?: string }) => {
@@ -24,7 +25,7 @@ function App() {
         <div className="min-h-screen bg-gray-900 text-white font-sans selection:bg-indigo-500/30">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Navigate to="/dashboard" />} />
+            <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/session/:sessionId" element={<ProtectedRoute><Copilot /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute requiredRole="admin"><Admin /></ProtectedRoute>} />
