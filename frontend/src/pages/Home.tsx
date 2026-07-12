@@ -208,9 +208,7 @@ export default function Home() {
 
       {/* Header */}
       <header className="relative z-10 max-w-7xl mx-auto px-8 py-6 flex items-center justify-between border-b border-slate-200/60 dark:border-white/5 bg-slate-50/20 dark:bg-black/10 backdrop-blur-sm transition-colors duration-300">
-        <Link to="/">
-          <Logo theme={theme} />
-        </Link>
+        <Logo theme={theme} />
 
         <div className="flex items-center space-x-4 sm:space-x-6">
           {/* Light Mode / Dark Mode Toggle */}

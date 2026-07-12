@@ -68,12 +68,11 @@ export default function Login() {
       <div className="w-full max-w-md rounded-3xl bg-white/5 border border-white/5 shadow-2xl p-8 backdrop-blur-md relative z-10 space-y-6">
         
         {/* Header/Logo */}
-        <div className="flex flex-col items-center space-y-4">
-          <Logo theme="dark" layout="vertical" className="mb-2" />
-          <h2 className="text-3xl font-serif text-white text-center">
+        <div className="flex flex-col items-center space-y-3">
+          <Logo theme="dark" className="mb-2" />
+          <h2 className="text-2xl font-serif text-white text-center">
             {isLogin ? 'Welcome back' : 'Create Account'}
           </h2>
-          <p className="text-xs text-slate-400 font-mono tracking-wider uppercase">{isLogin ? 'Sign in to InterviewOS' : 'Join the copilot network'}</p>
         </div>
         
         {error && (
