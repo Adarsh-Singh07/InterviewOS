@@ -7,7 +7,7 @@ export default function Logo({ theme, className = '' }: LogoProps) {
   const isDark = theme === 'dark';
   
   return (
-    <div className={`flex items-center space-x-3 select-none ${className}`}>
+    <div className={`flex items-center space-x-3.5 select-none ${className}`}>
       <div className="relative shrink-0 flex items-center justify-center">
         <svg viewBox="0 0 100 100" className="w-9 h-9">
           <defs>
@@ -16,21 +16,21 @@ export default function Logo({ theme, className = '' }: LogoProps) {
               <stop offset="100%" stopColor="#2563eb" />
             </linearGradient>
           </defs>
-          {/* 'i' */}
-          <rect x="24" y="38" width="12" height="38" rx="6" fill="url(#logo-grad-shared)" />
-          <circle cx="30" cy="22" r="7" fill="url(#logo-grad-shared)" />
-          {/* 'o' */}
+          {/* 'i' - Rounded bar and dot */}
+          <rect x="20" y="38" width="10" height="38" rx="5" fill="url(#logo-grad-shared)" />
+          <circle cx="25" cy="22" r="5.5" fill="url(#logo-grad-shared)" />
+          
+          {/* 'o' - Outer circle and cutout inner circle */}
           <path 
-            d="M 68,57 C 68,47 76,39 86,39 C 96,39 104,47 104,57 C 104,67 96,75 86,75 C 76,75 68,67 68,57 Z M 56,57 C 56,73 70,87 86,87 C 102,87 116,73 116,57 C 116,41 102,27 86,27 C 70,27 56,41 56,57 Z" 
+            d="M 60,37 A 20,20 0 1,0 60,77 A 20,20 0 1,0 60,37 Z M 60,47 A 10,10 0 1,1 60,67 A 10,10 0 1,1 60,47 Z" 
             fill="url(#logo-grad-shared)" 
             fillRule="evenodd" 
-            transform="translate(-10, -5)"
           />
+          
           {/* Sparkle star at top right of 'o' */}
           <path 
-            d="M 92,26 C 92,26 94,22 98,22 C 94,22 92,18 92,18 C 92,18 90,22 86,22 C 90,22 92,26 92,26 Z" 
-            fill="#60a5fa" 
-            transform="translate(-5, -5)"
+            d="M 77,25 Q 77,35 87,35 Q 77,35 77,45 Q 77,35 67,35 Q 77,35 77,25 Z" 
+            fill="#a855f7" 
           />
         </svg>
       </div>
@@ -38,7 +38,7 @@ export default function Logo({ theme, className = '' }: LogoProps) {
         <span className={`text-xl font-serif font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
           Interview<span className="text-indigo-500 dark:text-indigo-400">OS</span>
         </span>
-        <span className={`text-[7.5px] font-mono font-bold tracking-wider uppercase mt-0.5 whitespace-nowrap ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+        <span className={`text-[7.5px] font-mono font-bold tracking-wider uppercase mt-1.5 whitespace-nowrap ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
           AI-POWERED INTERVIEW COPILOT
         </span>
       </div>

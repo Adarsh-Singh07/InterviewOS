@@ -210,7 +210,20 @@ export default function Dashboard() {
 
   const handleOpenResumeEditor = (doc: any) => {
     setSelectedResume(doc);
-    const pd = doc.parsed_data || {};
+    let pd = doc.parsed_data || {};
+    if (typeof pd === 'string') {
+      try {
+        pd = JSON.parse(pd);
+      } catch (e) {
+        console.error("Failed to parse parsed_data string:", e);
+        pd = {};
+      }
+    }
+    if (typeof pd === 'string') {
+      try {
+        pd = JSON.parse(pd);
+      } catch (e) {}
+    }
     setEditResumeForm({
       name: pd.name || '',
       email: pd.email || '',
