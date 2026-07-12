@@ -69,7 +69,7 @@ export default function Login() {
         
         {/* Header/Logo */}
         <div className="flex flex-col items-center space-y-4">
-          <Logo theme="dark" className="justify-center scale-110 mb-2" />
+          <Logo theme="dark" layout="vertical" className="mb-2" />
           <h2 className="text-3xl font-serif text-white text-center">
             {isLogin ? 'Welcome back' : 'Create Account'}
           </h2>
