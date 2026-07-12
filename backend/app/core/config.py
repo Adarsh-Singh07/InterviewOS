@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     GEMINI_API_KEY_1: Optional[str] = None
     GEMINI_API_KEY_2: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
     
     class Config:
         import os
