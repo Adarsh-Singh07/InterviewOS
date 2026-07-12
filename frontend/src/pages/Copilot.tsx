@@ -258,7 +258,7 @@ export default function Copilot() {
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-4">
               <Link to="/dashboard" className="w-8 h-8 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-950 flex items-center justify-center shadow-sm hover:scale-[1.02] transition-transform" title="Back to Dashboard">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}.5 d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               </Link>
               <h1 className="text-2xl font-serif italic text-slate-900 dark:text-white">
                 InterviewOS Copilot
