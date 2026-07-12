@@ -36,7 +36,7 @@ export default function Copilot() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [fallbackWarning, setFallbackWarning] = useState<string>('');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
-  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+
 
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -96,18 +96,23 @@ export default function Copilot() {
     }
   }, [segments, currentInterim]);
 
-  // Auto-scroll answer
+  // Auto-scroll answer as new token chunks stream in
   useEffect(() => {
-    if (answerScrollRef.current && isAutoScrollEnabled) {
+    if (answerScrollRef.current) {
+      const target = answerScrollRef.current;
+      const distanceFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
+      if (distanceFromBottom < 250) {
+        target.scrollTop = target.scrollHeight;
+      }
+    }
+  }, [answer]);
+
+  // Force scroll to bottom when generation starts
+  useEffect(() => {
+    if (answerScrollRef.current && isGenerating) {
       answerScrollRef.current.scrollTop = answerScrollRef.current.scrollHeight;
     }
-  }, [answer, isAutoScrollEnabled]);
-
-  const handleAnswerScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const isAtBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 80;
-    setIsAutoScrollEnabled(isAtBottom);
-  };
+  }, [isGenerating]);
 
   // Sync theme to localStorage
   useEffect(() => {
@@ -231,7 +236,7 @@ export default function Copilot() {
     setIsGenerating(true);
     setAnswer(''); 
     setFallbackWarning('');
-    setIsAutoScrollEnabled(true);
+
 
     try {
       const url = `${API_BASE_URL}/api/v1/stream/generate?question=${encodeURIComponent(context)}&model_id=${selectedModel}` + (sessionId ? `&session_id=${sessionId}` : '');
@@ -502,7 +507,7 @@ export default function Copilot() {
               </div>
             </div>
  
-            <div ref={answerScrollRef} onScroll={handleAnswerScroll} className="flex-1 overflow-y-auto p-8 lg:p-12">
+            <div ref={answerScrollRef} className="flex-1 overflow-y-auto p-8 lg:p-12">
               {isGenerating ? (
                 <div className="space-y-5 animate-pulse max-w-2xl">
                   <div className="h-4 bg-slate-200 dark:bg-indigo-500/5 rounded w-3/4"></div>
