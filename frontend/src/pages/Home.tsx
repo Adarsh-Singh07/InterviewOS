@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Logo from '../components/Logo';
+import BrandWatermark from '../components/BrandWatermark';
 
 interface DemoStep {
   question: string;
@@ -198,6 +199,9 @@ export default function Home() {
         .animate-wave-bar { animation: pulse-wave 1.2s infinite ease-in-out; }
         .animate-cursor { animation: blink-cursor 0.8s infinite; }
       `}</style>
+
+      {/* Brand Watermark */}
+      <BrandWatermark />
 
       {/* Floating Animated Gradient Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden">

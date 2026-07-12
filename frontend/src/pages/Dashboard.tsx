@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
 import Logo from '../components/Logo';
+import BrandWatermark from '../components/BrandWatermark';
 
 interface DocumentConfig {
   id: number;
@@ -310,6 +311,8 @@ export default function Dashboard() {
     <div className={`${theme} flex h-screen overflow-hidden relative`}>
       {/* Background Noise and Ambience */}
       <div className="noise-overlay" />
+      {/* Brand Watermark */}
+      <BrandWatermark />
       <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-indigo-500/5 to-purple-500/0 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-emerald-500/5 to-indigo-500/0 blur-[100px] pointer-events-none" />
 

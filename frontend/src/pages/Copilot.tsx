@@ -4,6 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { API_BASE_URL, WS_BASE_URL } from '../config';
 import Logo from '../components/Logo';
+import BrandWatermark from '../components/BrandWatermark';
 
 interface Segment {
   id: string;
@@ -312,6 +313,8 @@ export default function Copilot() {
     <div className={`${theme} flex h-screen flex-col overflow-hidden relative`}>
       {/* Background Noise and Ambience */}
       <div className="noise-overlay" />
+      {/* Brand Watermark — fades when answer is present, more vivid when idle */}
+      <BrandWatermark opacity={answer || isGenerating ? 0.45 : 1} />
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-indigo-500/5 to-purple-500/0 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-emerald-500/5 to-indigo-500/0 blur-[80px] pointer-events-none" />
 

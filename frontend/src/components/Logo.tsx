@@ -1,48 +1,31 @@
 import { Link } from 'react-router-dom';
 import logoLight from '../assets/LightMode.png';
-import logoIconOnly from '../assets/Logo.png';
+import logoDark from '../assets/NightMode.png';
 
 interface LogoProps {
   theme: 'dark' | 'light';
   className?: string;
 }
 
+/**
+ * Renders the correct logo for the current theme.
+ * Both PNGs are transparent, so no blend-mode tricks needed.
+ * The header logo is rendered at h-14 (56 px) for strong presence.
+ */
 export default function Logo({ theme, className = '' }: LogoProps) {
   const isDark = theme === 'dark';
 
   return (
     <Link
       to="/"
-      className={`inline-flex items-center select-none hover:opacity-90 active:scale-[0.99] transition-all duration-200 ${className}`}
+      className={`inline-flex items-center select-none hover:opacity-90 active:scale-[0.98] transition-all duration-200 ${className}`}
     >
-      {isDark ? (
-        /* Dark mode: use icon-only Logo.png with screen blend to make dark bg transparent,
-           then show "InterviewOS" text in CSS since the icon has no text */
-        <div className="flex items-center gap-3">
-          <img
-            src={logoIconOnly}
-            alt="InterviewOS"
-            style={{ mixBlendMode: 'screen' }}
-            className="h-14 w-auto object-contain"
-          />
-          <span className="flex flex-col leading-none">
-            <span className="text-lg font-bold tracking-tight text-white">
-              Interview<span className="text-[#7c6fff]">OS</span>
-            </span>
-            <span className="text-[9px] font-mono tracking-[0.18em] uppercase text-slate-400 mt-0.5">
-              AI-Powered Copilot
-            </span>
-          </span>
-        </div>
-      ) : (
-        /* Light mode: use LightMode.png with multiply blend so white bg disappears */
-        <img
-          src={logoLight}
-          alt="InterviewOS"
-          style={{ mixBlendMode: 'multiply' }}
-          className="h-16 w-auto object-contain"
-        />
-      )}
+      <img
+        src={isDark ? logoDark : logoLight}
+        alt="InterviewOS"
+        className="h-14 w-auto object-contain"
+        draggable={false}
+      />
     </Link>
   );
 }
