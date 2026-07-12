@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import Logo from '../components/Logo';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -67,10 +68,8 @@ export default function Login() {
       <div className="w-full max-w-md rounded-3xl bg-white/5 border border-white/5 shadow-2xl p-8 backdrop-blur-md relative z-10 space-y-6">
         
         {/* Header/Logo */}
-        <div className="flex flex-col items-center space-y-2">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          </div>
+        <div className="flex flex-col items-center space-y-4">
+          <Logo theme="dark" className="justify-center scale-110 mb-2" />
           <h2 className="text-3xl font-serif text-white text-center">
             {isLogin ? 'Welcome back' : 'Create Account'}
           </h2>

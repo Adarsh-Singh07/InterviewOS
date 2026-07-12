@@ -6,13 +6,95 @@
   --font-sans: 'Plus Jakarta Sans', sans-serif;
   --font-serif: 'Instrument Serif', serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Indigo overrides */
+  --color-indigo-50: var(--theme-indigo-50);
+  --color-indigo-100: var(--theme-indigo-100);
+  --color-indigo-200: var(--theme-indigo-200);
+  --color-indigo-300: var(--theme-indigo-300);
+  --color-indigo-400: var(--theme-indigo-400);
+  --color-indigo-500: var(--theme-indigo-500);
+  --color-indigo-600: var(--theme-indigo-600);
+  --color-indigo-700: var(--theme-indigo-700);
+  --color-indigo-800: var(--theme-indigo-800);
+  --color-indigo-900: var(--theme-indigo-900);
+  --color-indigo-950: var(--theme-indigo-950);
+
+  /* Purple overrides */
+  --color-purple-50: var(--theme-purple-50);
+  --color-purple-100: var(--theme-purple-100);
+  --color-purple-200: var(--theme-purple-200);
+  --color-purple-300: var(--theme-purple-300);
+  --color-purple-400: var(--theme-purple-400);
+  --color-purple-500: var(--theme-purple-500);
+  --color-purple-600: var(--theme-purple-600);
+  --color-purple-700: var(--theme-purple-700);
+  --color-purple-800: var(--theme-purple-800);
+  --color-purple-900: var(--theme-purple-900);
+  --color-purple-950: var(--theme-purple-950);
+}
+
+:root {
+  /* Light mode: map indigo variables to cyan values */
+  --theme-indigo-50: #ecfeff;
+  --theme-indigo-100: #cffafe;
+  --theme-indigo-200: #a5f3fc;
+  --theme-indigo-300: #67e8f9;
+  --theme-indigo-400: #22d3ee;
+  --theme-indigo-500: #06b6d4;
+  --theme-indigo-600: #0891b2;
+  --theme-indigo-700: #0e7490;
+  --theme-indigo-800: #155e75;
+  --theme-indigo-900: #164e63;
+  --theme-indigo-950: #083344;
+
+  /* Light mode: map purple variables to sky/blue values */
+  --theme-purple-50: #f0f9ff;
+  --theme-purple-100: #e0f2fe;
+  --theme-purple-200: #bae6fd;
+  --theme-purple-300: #7dd3fc;
+  --theme-purple-400: #38bdf8;
+  --theme-purple-500: #0ea5e9;
+  --theme-purple-600: #2563eb;
+  --theme-purple-700: #1d4ed8;
+  --theme-purple-800: #1e40af;
+  --theme-purple-900: #1e3a8a;
+  --theme-purple-950: #172554;
+}
+
+.dark {
+  /* Dark mode: map back to classic indigo values */
+  --theme-indigo-50: #eef2ff;
+  --theme-indigo-100: #e0e7ff;
+  --theme-indigo-200: #c7d2fe;
+  --theme-indigo-300: #a5b4fc;
+  --theme-indigo-400: #818cf8;
+  --theme-indigo-500: #6366f1;
+  --theme-indigo-600: #4f46e5;
+  --theme-indigo-700: #4338ca;
+  --theme-indigo-800: #3730a3;
+  --theme-indigo-900: #312e81;
+  --theme-indigo-950: #1e1b4b;
+
+  /* Dark mode: map back to classic purple values */
+  --theme-purple-50: #faf5ff;
+  --theme-purple-100: #f3e8ff;
+  --theme-purple-200: #e9d5ff;
+  --theme-purple-300: #d8b4fe;
+  --theme-purple-400: #c084fc;
+  --theme-purple-500: #a855f7;
+  --theme-purple-600: #9333ea;
+  --theme-purple-700: #7e22ce;
+  --theme-purple-800: #6b21a8;
+  --theme-purple-900: #581c87;
+  --theme-purple-950: #3b0764;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   body {
-    @apply bg-[#FCFAF6] text-slate-800 font-sans transition-colors duration-300 antialiased selection:bg-indigo-500/10;
+    @apply bg-[#FCFAF6] text-slate-800 font-sans transition-colors duration-300 antialiased selection:bg-cyan-500/20 dark:selection:bg-indigo-500/30;
   }
   .dark body {
     @apply bg-[#060814] text-slate-100;

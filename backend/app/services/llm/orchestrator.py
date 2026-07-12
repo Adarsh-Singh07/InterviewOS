@@ -12,10 +12,8 @@ gemini_client_2 = genai.Client(api_key=settings.GEMINI_API_KEY_2) if settings.GE
 
 AVAILABLE_MODELS = [
     {"id": "gpt-5.4-mini", "name": "GPT 5.4 Mini (OpenAI)", "provider": "openai"},
-    {"id": "gpt-5.4", "name": "GPT 5.4 (OpenAI)", "provider": "openai_responses"},
     {"id": "llama-3.3-70b-versatile", "name": "Llama 3.3 70B (Groq)", "provider": "groq"},
     {"id": "llama-3.1-8b-instant", "name": "Llama 3.1 8B (Groq)", "provider": "groq"},
-    {"id": "mixtral-8x7b-32768", "name": "Mixtral 8x7B (Groq)", "provider": "groq"},
     {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "provider": "gemini"},
     {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "provider": "gemini"},
     {"id": "gemini-flash-latest", "name": "Gemini Flash Latest", "provider": "gemini"}
@@ -153,18 +151,21 @@ async def generate_answer_stream(question: str, context: str, custom_instruction
         "- Keep paragraphs short and spoken-out (2-3 lines max per paragraph) so it is easy to read and say out loud.\n"
         "- Use markdown bolding and inline code backticks sparingly to highlight key tools (e.g., `React`, `Python`) for visual readability, but ensure the surrounding text reads like a spoken script.\n"
         "- Always prefix the first sentence of your response with '⭐ **Answer:** '.\n\n"
+        "IDENTITY ADOPTION & CONTEXT INTEGRATION:\n"
+        "- If CV/Resume details are available in the 'Context' below, you MUST adopt the exact profile of that candidate (including their name, projects, experiences, skills, and education) to answer all personal or biographical questions.\n"
+        "- If NO CV/Resume details are available in the Context, speak in first-person as a qualified, highly capable candidate software engineer. Tailor your professional story dynamically to align with the target Company and Job Description requirements. Mention general best practices and high-impact engineering stories without hardcoding any specific candidate name or personal details unless provided in the Custom Instructions.\n\n"
         "Format Example for Self-Introduction:\n"
         "⭐ **Answer:** Sure! So, currently I'm a software developer deeply focused on building real-time applications and machine learning models. I've always loved solving hands-on automation challenges.\n\n"
-        "Before this, during my MCA studies, I spent a lot of time exploring computer vision. For instance, in my Indian Sign Language Recognition project, I noticed that translation models struggled with real-time video latency. I ended up implementing a hybrid `CNN` and `LSTM` architecture which slashed processing lag, allowing us to recognize gestures instantly. It was a massive win for accessibility.\n\n"
+        "Before this, I spent a lot of time exploring computer vision. For instance, in one of my key projects, I noticed that translation models struggled with real-time video latency. I ended up implementing a hybrid neural network architecture which slashed processing lag, allowing us to recognize gestures instantly. It was a massive win for accessibility.\n\n"
         "That focus on real-world impact is exactly why I'm here today. I saw your team's work in scaling intelligent automation, and I'd love to bring my experience in building low-latency models and automated pipelines to help your team scale these systems.\n\n"
         f"Context/Resume/Previous Memory:\n{context}\n\n"
         f"Custom Instructions:\n{custom_instructions}"
     )
     
-    is_lite = preferred_model_id and ("lite" in preferred_model_id or "mini" in preferred_model_id)
-    if is_lite:
+    is_lite_or_groq = preferred_model_id and ("lite" in preferred_model_id or "mini" in preferred_model_id or "groq" in preferred_model_id or "llama" in preferred_model_id)
+    if is_lite_or_groq:
         system_prompt += (
-            "\n\nIMPORTANT NOTE: Since this is a detailed technical interview, your response MUST be comprehensive, structured, and detailed enough to take at least 1 minute of natural speech to read aloud (approximately 120-150 words). Provide detailed explanations of the architecture, choices made, and actual project implementation stories rather than a brief summary."
+            "\n\nIMPORTANT COMPREHENSION NOTE: Your response MUST be highly comprehensive, elaborate, and detailed enough to take at least 1-2 minutes of natural speech to read aloud (approximately 150-250 words). Provide a complete story detailing the background context, options considered, implementation challenges, technical configurations (languages, databases, models), and results, rather than a brief summary."
         )
     
     models_to_try = []

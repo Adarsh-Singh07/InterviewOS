@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../config';
+import Logo from '../components/Logo';
 
 interface DocumentConfig {
   id: number;
@@ -305,14 +306,7 @@ export default function Dashboard() {
         <aside className="w-66 bg-white/60 dark:bg-[#0A0E1A]/40 backdrop-blur-md border-r border-slate-200/60 dark:border-white/5 flex flex-col justify-between transition-colors duration-300 z-10">
           <div className="p-6">
             {/* Logo */}
-            <div className="flex items-center space-x-3 mb-10 mt-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/10">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-              </div>
-              <span className="text-2xl font-serif italic tracking-wide text-slate-900 dark:text-white">
-                InterviewOS
-              </span>
-            </div>
+            <Logo theme={theme} className="mb-10 mt-2" />
 
             {/* Nav List */}
             <nav className="space-y-1.5">

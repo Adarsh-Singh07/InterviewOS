@@ -34,41 +34,42 @@ def bootstrap_admin():
 
 def init_additional_db_structures():
     db = SessionLocal()
+    from sqlalchemy import text
     try:
         # Check and alter documents
         try:
-            db.execute("SELECT parsed_data FROM documents LIMIT 1")
+            db.execute(text("SELECT parsed_data FROM documents LIMIT 1"))
         except Exception:
             db.rollback()
             is_postgres = "postgresql" in settings.DATABASE_URL
             col_type = "JSONB" if is_postgres else "JSON"
-            db.execute(f"ALTER TABLE documents ADD COLUMN parsed_data {col_type} NULL")
+            db.execute(text(f"ALTER TABLE documents ADD COLUMN parsed_data {col_type} NULL"))
             db.commit()
             logger.info("Added parsed_data column to documents table")
 
         # Check and alter interview_sessions
         try:
-            db.execute("SELECT summary FROM interview_sessions LIMIT 1")
+            db.execute(text("SELECT summary FROM interview_sessions LIMIT 1"))
         except Exception:
             db.rollback()
-            db.execute("ALTER TABLE interview_sessions ADD COLUMN summary TEXT NULL")
+            db.execute(text("ALTER TABLE interview_sessions ADD COLUMN summary TEXT NULL"))
             db.commit()
             logger.info("Added summary column to interview_sessions table")
 
         # Check and alter users
         try:
-            db.execute("SELECT allowed_models FROM users LIMIT 1")
+            db.execute(text("SELECT allowed_models FROM users LIMIT 1"))
         except Exception:
             db.rollback()
             is_postgres = "postgresql" in settings.DATABASE_URL
             col_type = "JSONB" if is_postgres else "JSON"
-            db.execute(f"ALTER TABLE users ADD COLUMN allowed_models {col_type} NULL")
+            db.execute(text(f"ALTER TABLE users ADD COLUMN allowed_models {col_type} NULL"))
             db.commit()
             logger.info("Added allowed_models column to users table")
 
         # Create session_messages table if not exists
         try:
-            db.execute("SELECT id FROM session_messages LIMIT 1")
+            db.execute(text("SELECT id FROM session_messages LIMIT 1"))
         except Exception:
             db.rollback()
             is_postgres = "postgresql" in settings.DATABASE_URL
@@ -83,7 +84,7 @@ def init_additional_db_structures():
                 created_at {time_type}
             );
             """
-            db.execute(create_query)
+            db.execute(text(create_query))
             db.commit()
             logger.info("Created session_messages table")
     except Exception as e:

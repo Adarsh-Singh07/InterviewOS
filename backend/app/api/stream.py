@@ -115,6 +115,20 @@ async def manual_generate_answer(
             if hasattr(session, 'custom_instructions') and session.custom_instructions:
                 custom_instructions = session.custom_instructions + "\n" + custom_instructions
             
+    # Fetch chronological session chat history for memory
+    session_history = ""
+    if session_id:
+        try:
+            from app.models.session import SessionMessage
+            messages = db.query(SessionMessage).filter(SessionMessage.session_id == session_id).order_by(SessionMessage.created_at.asc()).all()
+            if messages:
+                session_history = "ACTIVE CHAT HISTORY FOR THIS SESSION (CHRONOLOGICAL):\n"
+                for msg in messages:
+                    role_label = "Interviewer Question" if msg.role == "interviewer" else "Candidate Copilot Answer"
+                    session_history += f"[{role_label}]: {msg.text}\n\n"
+        except Exception as db_err:
+            print(f"Error fetching session chat history: {db_err}")
+
     # RAG search isolated by session_id and attached documents
     context_hits = search_knowledge_base(
         user_id=user_id, 
@@ -124,11 +138,17 @@ async def manual_generate_answer(
     )
     context_text = "\n".join([hit["text"] for hit in context_hits])
     
+    combined_context = ""
+    if session_history:
+        combined_context += session_history + "\n---\n"
+    if context_text:
+        combined_context += "SEMANTIC KNOWLEDGE BASE HITS:\n" + context_text
+        
     # LLM generation wrapper
     async def stream_wrapper():
         full_answer = ""
         from app.services.llm.orchestrator import generate_answer_stream
-        async for chunk_data in generate_answer_stream(question, context_text, custom_instructions, preferred_model_id=model_id):
+        async for chunk_data in generate_answer_stream(question, combined_context, custom_instructions, preferred_model_id=model_id):
             yield chunk_data
             if chunk_data.startswith("data: ") and chunk_data != "data: [DONE]\n\n":
                 try:

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { API_BASE_URL, WS_BASE_URL } from '../config';
+import Logo from '../components/Logo';
 
 interface Segment {
   id: string;
@@ -115,42 +116,91 @@ export default function Copilot() {
 
   const toggleRecording = () => {
     if (isRecording) {
-      wsRef.current?.close();
       const recorder = (window as any).mediaRecorder;
-      if (recorder && recorder.state !== 'inactive') {
-        recorder.stop();
-        recorder.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+      if (recorder) {
+        try {
+          if (recorder.state !== 'inactive') recorder.stop();
+        } catch (e) { console.error(e); }
+        if (recorder.stream) {
+          recorder.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+        }
+        (window as any).mediaRecorder = null;
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
       setIsRecording(false);
     } else {
-      wsRef.current = new WebSocket(`${WS_BASE_URL}/api/v1/stream/audio?token=${token}`);
+      const ws = new WebSocket(`${WS_BASE_URL}/api/v1/stream/audio?token=${token}`);
+      wsRef.current = ws;
       
-      wsRef.current.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.type === 'transcript' && data.text.trim()) {
-          if (data.is_final) {
-            setSegments(prev => [...prev, { id: Date.now().toString(), text: data.text, isFinal: true }]);
-            setCurrentInterim('');
-          } else {
-            setCurrentInterim(data.text);
+      let mediaRecorderInstance: MediaRecorder | null = null;
+      let streamInstance: MediaStream | null = null;
+      
+      ws.onopen = () => {
+        console.log("WebSocket audio connection opened.");
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          streamInstance = stream;
+          const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+          mediaRecorderInstance = mediaRecorder;
+          (window as any).mediaRecorder = mediaRecorder;
+          
+          mediaRecorder.addEventListener('dataavailable', (event) => {
+            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+              ws.send(event.data);
+            }
+          });
+          
+          mediaRecorder.start(250);
+        }).catch(err => {
+          console.error("Microphone access failed:", err);
+          alert("Could not access microphone. Please check permissions.");
+          ws.close();
+        });
+      };
+      
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.error) {
+            alert(`Audio transcribing error: ${data.error}`);
+            ws.close();
+            return;
           }
+          if (data.type === 'transcript' && data.text.trim()) {
+            if (data.is_final) {
+              setSegments(prev => [...prev, { id: Date.now().toString(), text: data.text, isFinal: true }]);
+              setCurrentInterim('');
+            } else {
+              setCurrentInterim(data.text);
+            }
+          }
+        } catch (err) {
+          console.error("Error parsing WS message:", err);
         }
       };
       
-      setIsRecording(true);
+      ws.onerror = (err) => {
+        console.error("WebSocket audio connection error:", err);
+      };
       
-      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-        (window as any).mediaRecorder = mediaRecorder;
-        
-        mediaRecorder.addEventListener('dataavailable', (event) => {
-          if (event.data.size > 0 && wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(event.data);
-          }
-        });
-        
-        mediaRecorder.start(250);
-      }).catch(console.error);
+      ws.onclose = () => {
+        console.log("WebSocket audio connection closed.");
+        if (mediaRecorderInstance) {
+          try {
+            if (mediaRecorderInstance.state !== 'inactive') mediaRecorderInstance.stop();
+          } catch (e) {}
+        }
+        if (streamInstance) {
+          streamInstance.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+        }
+        (window as any).mediaRecorder = null;
+        setIsRecording(false);
+        wsRef.current = null;
+      };
+      
+      setIsRecording(true);
     }
   };
 
@@ -269,9 +319,7 @@ export default function Copilot() {
               <Link to="/dashboard" className="w-8 h-8 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-950 flex items-center justify-center shadow-sm hover:scale-[1.02] transition-transform" title="Back to Dashboard">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               </Link>
-              <h1 className="text-2xl font-serif italic text-slate-900 dark:text-white">
-                InterviewOS Copilot
-              </h1>
+              <Logo theme={theme} />
             </div>
           </div>
           
