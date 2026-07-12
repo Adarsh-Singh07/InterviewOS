@@ -38,7 +38,7 @@ async def stream_with_openai(model_id: str, prompt: str, system_prompt: str):
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.4,
-        "max_tokens": 1024,
+        "max_completion_tokens": 1024,
         "stream": True
     }
     async with httpx.AsyncClient() as client:
