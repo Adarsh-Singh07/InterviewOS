@@ -315,7 +315,7 @@ export default function Copilot() {
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-indigo-500/5 to-purple-500/0 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-gradient-to-tr from-emerald-500/5 to-indigo-500/0 blur-[80px] pointer-events-none" />
 
-      <div className="flex-1 flex flex-col bg-[#FCFAF6] dark:bg-[#060814] text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#FCFAF6] dark:bg-[#060814] text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300">
         
         {/* Header */}
         <header className="relative z-50 flex items-center justify-between px-8 py-4 border-b border-slate-200/60 dark:border-white/5 bg-white/60 dark:bg-[#0A0D1A]/40 backdrop-blur-md transition-colors duration-300">
