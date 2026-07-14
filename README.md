@@ -2,6 +2,14 @@
 
 A private, self-hosted, real-time AI assistant for interviews and meetings.
 
+#Live Demo
+
+https://adarshsingh.in/projects/interviewos
+
+#Portfolio
+
+https://adarshsingh.in
+
 ## Architecture
 
 This project is built using a modern, scalable, and completely free/open-source stack:
