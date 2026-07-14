@@ -2,11 +2,11 @@
 
 A private, self-hosted, real-time AI assistant for interviews and meetings.
 
-#Live Demo
+# Live Demo
 
 https://adarshsingh.in/projects/interviewos
 
-#Portfolio
+# Portfolio
 
 https://adarshsingh.in
 
