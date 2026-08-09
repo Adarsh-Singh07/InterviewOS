@@ -75,3 +75,5 @@ For production, we use pre-built images and an Nginx reverse proxy without live-
 - **Stop all services:** `docker compose down`
 - **Wipe database completely:** `docker compose down -v`
 - **Rebuild containers:** `docker compose up -d --build`
+<!-- Daily streak sync: Sun Aug  9 23:32:31 UTC 2026 -->
+<!-- Daily streak sync: Sun Aug  9 23:32:43 UTC 2026 -->
