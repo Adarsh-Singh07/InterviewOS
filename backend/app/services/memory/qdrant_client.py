@@ -107,4 +107,7 @@ def search_knowledge_base(user_id: int, query: str, session_id: int = None, atta
     return [{"text": hit.payload["text"], "source": hit.payload["source"], "score": hit.score} for hit in results.points]
 
 # Initialize at startup
-init_qdrant()
+try:
+    init_qdrant()
+except Exception as e:
+    print(f"Warning: Failed to initialize Qdrant at startup: {e}")
