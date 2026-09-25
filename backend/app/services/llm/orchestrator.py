@@ -16,7 +16,8 @@ AVAILABLE_MODELS = [
     {"id": "llama-3.1-8b-instant", "name": "Llama 3.1 8B (Groq)", "provider": "groq"},
     {"id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash", "provider": "gemini"},
     {"id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite", "provider": "gemini"},
-    {"id": "gemini-flash-latest", "name": "Gemini Flash Latest", "provider": "gemini"}
+    {"id": "gemini-flash-latest", "name": "Gemini Flash Latest", "provider": "gemini"},
+    {"id": "agnes-3.0-flash", "name": "Agnes 3.0 Flash", "provider": "agnes"}
 ]
 
 import json
@@ -106,6 +107,37 @@ async def stream_with_openai_responses(model_id: str, prompt: str, system_prompt
             yield text[i:i+chunk_size]
             await asyncio.sleep(0.01)
 
+
+async def stream_with_agnes(model_id: str, prompt: str, system_prompt: str):
+    if not settings.AGNES_API_KEY:
+        raise ValueError("Agnes API key not configured")
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {settings.AGNES_API_KEY}"
+    }
+    payload = {
+        "model": model_id,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ],
+        "stream": True
+    }
+    async with httpx.AsyncClient() as client:
+        async with client.stream("POST", "https://apihub.agnes-ai.com/v1/chat/completions", json=payload, headers=headers, timeout=60.0) as r:
+            r.raise_for_status()
+            async for line in r.aiter_lines():
+                if line.startswith("data: ") and line != "data: [DONE]":
+                    data_str = line[6:]
+                    try:
+                        data = json.loads(data_str)
+                        if "choices" in data and len(data["choices"]) > 0:
+                            delta = data["choices"][0].get("delta", {})
+                            if "content" in delta:
+                                yield delta["content"]
+                    except json.JSONDecodeError:
+                        pass
+
 async def stream_with_groq(model_id: str, prompt: str, system_prompt: str):
     if not groq_client:
         raise ValueError("Groq API key not configured")
@@ -194,6 +226,9 @@ async def generate_answer_stream(question: str, context: str, custom_instruction
                     yield f"data: {json.dumps({'answer': chunk})}\n\n"
             elif model["provider"] == "groq":
                 async for chunk in stream_with_groq(model["id"], question, system_prompt):
+                    yield f"data: {json.dumps({'answer': chunk})}\n\n"
+            elif model["provider"] == "agnes":
+                async for chunk in stream_with_agnes(model["id"], question, system_prompt):
                     yield f"data: {json.dumps({'answer': chunk})}\n\n"
             elif model["provider"] == "gemini":
                 try:
