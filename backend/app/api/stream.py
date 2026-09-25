@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -129,13 +130,18 @@ async def manual_generate_answer(
         except Exception as db_err:
             print(f"Error fetching session chat history: {db_err}")
 
-    # RAG search isolated by session_id and attached documents
-    context_hits = search_knowledge_base(
-        user_id=user_id, 
-        query=question, 
-        session_id=session_id, 
-        attached_doc_ids=attached_doc_ids
-    )
+    # RAG search isolated by session_id and attached documents (async offload)
+    try:
+        context_hits = await asyncio.to_thread(
+            search_knowledge_base,
+            user_id=user_id,
+            query=question,
+            session_id=session_id,
+            attached_doc_ids=attached_doc_ids
+        )
+    except Exception as e:
+        print(f"Warning: Failed to fetch context from Qdrant: {e}")
+        context_hits = []
     context_text = "\n".join([hit["text"] for hit in context_hits])
     
     combined_context = ""
@@ -161,7 +167,6 @@ async def manual_generate_answer(
         # Save the interaction to memory with session_id
         if full_answer:
             from app.services.memory.qdrant_client import ingest_document
-            import asyncio
             interaction = f"Interview Question: {question}\nCopilot Answer: {full_answer}"
             await asyncio.to_thread(
                 ingest_document, 
